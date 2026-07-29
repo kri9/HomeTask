@@ -5,12 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record TaskRequest (
-    @NotBlank(message = "title must not be blank")
+    @NotBlank(message = "must not be blank")
     String title,
 
     String description,
 
-    @NotNull(message = "status must not be null")
+    @NotNull(message = "must not be null")
     TaskStatus status
 ) {
 }
