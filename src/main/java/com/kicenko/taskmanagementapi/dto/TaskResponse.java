@@ -6,9 +6,10 @@ import java.time.Instant;
 
 public record TaskResponse(
         String id,
-        String tittle,
+        String title,
         String description,
         TaskStatus status,
         Instant createdAt
 ) {
+
 }
