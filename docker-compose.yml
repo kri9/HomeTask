@@ -7,9 +7,16 @@ services:
       - "8080:8080"
     environment:
       MONGODB_URI: mongodb://mongodb:27017/task_management
+      DB_URL: jdbc:postgresql://postgres:5432/task_management
+      DB_USERNAME: task_user
+      DB_PASSWORD: SecretPostgresPassword
+      JWT_SECRET: v1Dn1Og1AvyYngzYYQdubIG4G2RQL2k6XgKd0EWn21ixKD+gyLqHl9cFy3g0pWRF
+      JWT_EXPIRATION: 1h
       SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-}"
     depends_on:
       mongodb:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     restart: unless-stopped
 
@@ -29,5 +36,24 @@ services:
       retries: 5
     restart: unless-stopped
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: task-management-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: task_management
+      POSTGRES_USER: task_user
+      POSTGRES_PASSWORD: SecretPostgresPassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U task_user -d task_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
+  postgres_data:
