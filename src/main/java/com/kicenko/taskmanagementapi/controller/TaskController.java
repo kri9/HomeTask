@@ -1,9 +1,15 @@
 package com.kicenko.taskmanagementapi.controller;
 
+import com.kicenko.taskmanagementapi.dto.PageResponse;
 import com.kicenko.taskmanagementapi.dto.TaskRequest;
 import com.kicenko.taskmanagementapi.dto.TaskResponse;
+import com.kicenko.taskmanagementapi.model.TaskPriority;
+import com.kicenko.taskmanagementapi.model.TaskStatus;
 import com.kicenko.taskmanagementapi.service.TaskService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,8 +37,19 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getAllTasks() {
-        return ResponseEntity.ok(taskService.getAllTasks());
+    public ResponseEntity<PageResponse<TaskResponse>> getTasks(
+            @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) TaskPriority priority,
+            @PageableDefault(
+                    size = 10,
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            )
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                taskService.getTasks(status, priority, pageable)
+        );
     }
 
     @GetMapping("/{id}")

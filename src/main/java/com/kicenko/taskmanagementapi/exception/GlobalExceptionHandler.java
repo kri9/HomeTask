@@ -6,6 +6,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.List;
@@ -63,6 +64,27 @@ public class GlobalExceptionHandler {
                 status.value(),
                 "Malformed request body",
                 List.of("Request body contains invalid JSON or enum value")
+        );
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(
+            MethodArgumentTypeMismatchException exception
+    ) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                "Invalid request parameter",
+                List.of(
+                        exception.getName()
+                                + ": invalid value '"
+                                + exception.getValue()
+                                + "'"
+                )
         );
 
         return ResponseEntity.status(status).body(error);

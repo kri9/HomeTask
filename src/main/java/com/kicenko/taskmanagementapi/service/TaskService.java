@@ -1,23 +1,27 @@
 package com.kicenko.taskmanagementapi.service;
 
+import com.kicenko.taskmanagementapi.dto.PageResponse;
 import com.kicenko.taskmanagementapi.dto.TaskRequest;
 import com.kicenko.taskmanagementapi.dto.TaskResponse;
 import com.kicenko.taskmanagementapi.exception.TaskNotFoundException;
 import com.kicenko.taskmanagementapi.model.Task;
+import com.kicenko.taskmanagementapi.model.TaskPriority;
+import com.kicenko.taskmanagementapi.model.TaskStatus;
 import com.kicenko.taskmanagementapi.repository.TaskRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class TaskService {
 
     private final TaskRepository taskRepository;
-    public TaskService(TaskRepository taskRepository){
+
+    public TaskService(TaskRepository taskRepository) {
         this.taskRepository = taskRepository;
     }
 
-    public TaskResponse createTask (TaskRequest request) {
+    public TaskResponse createTask(TaskRequest request) {
         Task task = new Task(
                 null,
                 request.title(),
@@ -28,22 +32,37 @@ public class TaskService {
                 null
         );
 
-        Task savedTask = taskRepository.save(task);
-
-        return toResponse(savedTask);
+        return toResponse(taskRepository.save(task));
     }
 
-    public List<TaskResponse> getAllTasks() {
-        return taskRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public PageResponse<TaskResponse> getTasks(
+            TaskStatus status,
+            TaskPriority priority,
+            Pageable pageable
+    ) {
+        Page<Task> tasks;
+
+        if (status != null && priority != null) {
+            tasks = taskRepository.findByStatusAndPriority(
+                    status,
+                    priority,
+                    pageable
+            );
+        } else if (status != null) {
+            tasks = taskRepository.findByStatus(status, pageable);
+        } else if (priority != null) {
+            tasks = taskRepository.findByPriority(priority, pageable);
+        } else {
+            tasks = taskRepository.findAll(pageable);
+        }
+
+        Page<TaskResponse> responses = tasks.map(this::toResponse);
+
+        return PageResponse.from(responses);
     }
 
     public TaskResponse getTaskById(String id) {
-        Task task = findTaskById(id);
-
-        return toResponse(task);
+        return toResponse(findTaskById(id));
     }
 
     public TaskResponse updateTask(String id, TaskRequest request) {
@@ -54,14 +73,11 @@ public class TaskService {
         task.setStatus(request.status());
         task.setPriority(request.priority());
 
-        Task updatedTask = taskRepository.save(task);
-
-        return toResponse(updatedTask);
+        return toResponse(taskRepository.save(task));
     }
 
     public void deleteTask(String id) {
-        Task task = findTaskById(id);
-        taskRepository.delete(task);
+        taskRepository.delete(findTaskById(id));
     }
 
     private Task findTaskById(String id) {
