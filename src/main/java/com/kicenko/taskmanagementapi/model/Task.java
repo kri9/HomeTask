@@ -2,6 +2,7 @@ package com.kicenko.taskmanagementapi.model;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -18,8 +19,13 @@ public class Task {
 
     private TaskStatus status;
 
+    private TaskPriority priority;
+
     @CreatedDate
     private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 
     public Task() {
     }
@@ -29,13 +35,17 @@ public class Task {
             String title,
             String description,
             TaskStatus status,
-            Instant createdAt
+            TaskPriority priority,
+            Instant createdAt,
+            Instant updatedAt
     ) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
+        this.priority = priority;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public String getId() {
@@ -70,11 +80,27 @@ public class Task {
         this.status = status;
     }
 
+    public TaskPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(TaskPriority priority) {
+        this.priority = priority;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

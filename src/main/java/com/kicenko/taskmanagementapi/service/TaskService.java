@@ -23,6 +23,8 @@ public class TaskService {
                 request.title(),
                 request.description(),
                 request.status(),
+                request.priority(),
+                null,
                 null
         );
 
@@ -50,6 +52,7 @@ public class TaskService {
         task.setTitle(request.title());
         task.setDescription(request.description());
         task.setStatus(request.status());
+        task.setPriority(request.priority());
 
         Task updatedTask = taskRepository.save(task);
 
@@ -72,7 +75,9 @@ public class TaskService {
                 task.getTitle(),
                 task.getDescription(),
                 task.getStatus(),
-                task.getCreatedAt()
+                task.getPriority(),
+                task.getCreatedAt(),
+                task.getUpdatedAt()
         );
     }
 }

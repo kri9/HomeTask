@@ -1,5 +1,6 @@
 package com.kicenko.taskmanagementapi.dto;
 
+import com.kicenko.taskmanagementapi.model.TaskPriority;
 import com.kicenko.taskmanagementapi.model.TaskStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -11,6 +12,9 @@ public record TaskRequest (
     String description,
 
     @NotNull(message = "must not be null")
-    TaskStatus status
+    TaskStatus status,
+
+    @NotNull(message = "must not be null")
+    TaskPriority priority
 ) {
 }

@@ -1,5 +1,6 @@
 package com.kicenko.taskmanagementapi.dto;
 
+import com.kicenko.taskmanagementapi.model.TaskPriority;
 import com.kicenko.taskmanagementapi.model.TaskStatus;
 
 import java.time.Instant;
@@ -9,7 +10,9 @@ public record TaskResponse(
         String title,
         String description,
         TaskStatus status,
-        Instant createdAt
+        TaskPriority priority,
+        Instant createdAt,
+        Instant updatedAt
 ) {
 
 }

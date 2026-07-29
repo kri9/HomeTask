@@ -4,6 +4,7 @@ import com.kicenko.taskmanagementapi.dto.TaskRequest;
 import com.kicenko.taskmanagementapi.dto.TaskResponse;
 import com.kicenko.taskmanagementapi.exception.TaskNotFoundException;
 import com.kicenko.taskmanagementapi.model.Task;
+import com.kicenko.taskmanagementapi.model.TaskPriority;
 import com.kicenko.taskmanagementapi.model.TaskStatus;
 import com.kicenko.taskmanagementapi.repository.TaskRepository;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,8 @@ class TaskServiceTest {
         TaskRequest request = new TaskRequest(
                 "Learn Spring Boot",
                 "Build REST API",
-                TaskStatus.TODO
+                TaskStatus.TODO,
+                TaskPriority.MEDIUM
         );
 
         when(taskRepository.save(any(Task.class)))
@@ -52,6 +54,7 @@ class TaskServiceTest {
                 () -> assertEquals("task-1", response.id()),
                 () -> assertEquals("Learn Spring Boot", response.title()),
                 () -> assertEquals("Build REST API", response.description()),
+                () -> assertEquals(TaskPriority.MEDIUM, response.priority()),
                 () -> assertEquals(TaskStatus.TODO, response.status()),
                 () -> assertEquals(createdAt, response.createdAt())
         );
@@ -87,13 +90,16 @@ class TaskServiceTest {
                 "Old title",
                 "Old description",
                 TaskStatus.TODO,
+                TaskPriority.LOW,
+                createdAt,
                 createdAt
         );
 
         TaskRequest request = new TaskRequest(
                 "Updated title",
                 "Updated description",
-                TaskStatus.DONE
+                TaskStatus.DONE,
+                TaskPriority.HIGH
         );
 
         when(taskRepository.findById("task-1"))
@@ -109,6 +115,7 @@ class TaskServiceTest {
                 () -> assertEquals("Updated title", response.title()),
                 () -> assertEquals("Updated description", response.description()),
                 () -> assertEquals(TaskStatus.DONE, response.status()),
+                () -> assertEquals(TaskPriority.HIGH, response.priority()),
                 () -> assertEquals(createdAt, response.createdAt())
         );
 
