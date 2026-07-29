@@ -1,12 +1,12 @@
 package com.kicenko.taskmanagementapi.controller;
 
-import com.kicenko.taskmanagementapi.dto.PageResponse;
 import com.kicenko.taskmanagementapi.dto.TaskRequest;
 import com.kicenko.taskmanagementapi.dto.TaskResponse;
 import com.kicenko.taskmanagementapi.model.TaskPriority;
 import com.kicenko.taskmanagementapi.model.TaskStatus;
 import com.kicenko.taskmanagementapi.service.TaskService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -18,13 +18,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService taskService;
-
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-    }
 
     @PostMapping
     public ResponseEntity<TaskResponse> createTask(
@@ -37,7 +34,7 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<PageResponse<TaskResponse>> getTasks(
+    public ResponseEntity<List<TaskResponse>> getTasks(
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) TaskPriority priority,
             @PageableDefault(

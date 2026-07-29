@@ -7,6 +7,7 @@ import com.kicenko.taskmanagementapi.model.Task;
 import com.kicenko.taskmanagementapi.model.TaskPriority;
 import com.kicenko.taskmanagementapi.model.TaskStatus;
 import com.kicenko.taskmanagementapi.repository.TaskRepository;
+import com.kicenko.taskmanagementapi.repository.TaskSearchRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,6 +26,9 @@ class TaskServiceTest {
 
     @Mock
     private TaskRepository taskRepository;
+
+    @Mock
+    private TaskSearchRepository taskSearchRepository;
 
     @InjectMocks
     private TaskService taskService;
