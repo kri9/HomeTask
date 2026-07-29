@@ -24,6 +24,6 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: "${JWT_SECRET:v1Dn1Og1AvyYngzYYQdubIG4G2RQL2k6XgKd0EWn21ixKD+gyLqHl9cFy3g0pWRF}"
   expiration: ${JWT_EXPIRATION:1h}
   issuer: task-management-api

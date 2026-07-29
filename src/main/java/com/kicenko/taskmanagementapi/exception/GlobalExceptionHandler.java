@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,6 +86,38 @@ public class GlobalExceptionHandler {
                                 + exception.getValue()
                                 + "'"
                 )
+        );
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<ApiError> handleEmailAlreadyExists(
+            EmailAlreadyExistsException exception
+    ) {
+        HttpStatus status = HttpStatus.CONFLICT;
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                exception.getMessage(),
+                List.of()
+        );
+
+        return ResponseEntity.status(status).body(error);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException exception
+    ) {
+        HttpStatus status = HttpStatus.UNAUTHORIZED;
+
+        ApiError error = new ApiError(
+                Instant.now(),
+                status.value(),
+                "Invalid email or password",
+                List.of()
         );
 
         return ResponseEntity.status(status).body(error);
