@@ -43,6 +43,7 @@ class TaskSearchRepositoryTest {
         );
 
         taskSearchRepository.search(
+                "user-1",
                 TaskStatus.TODO,
                 TaskPriority.HIGH,
                 pageable
@@ -55,6 +56,7 @@ class TaskSearchRepositoryTest {
 
         Query query = queryCaptor.getValue();
 
+        assertEquals("user-1", query.getQueryObject().get("userId"));
         assertEquals(TaskStatus.TODO, query.getQueryObject().get("status"));
         assertEquals(TaskPriority.HIGH, query.getQueryObject().get("priority"));
         assertEquals(5, query.getLimit());

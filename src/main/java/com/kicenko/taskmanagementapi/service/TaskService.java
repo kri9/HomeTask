@@ -21,8 +21,12 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskSearchRepository taskSearchRepository;
 
-    public TaskResponse createTask(TaskRequest request) {
+    public TaskResponse createTask(
+            String userId,
+            TaskRequest request
+    ) {
         Task task = Task.builder()
+                .userId(userId)
                 .title(request.title())
                 .description(request.description())
                 .status(request.status())
@@ -33,22 +37,31 @@ public class TaskService {
     }
 
     public List<TaskResponse> getTasks(
+            String userId,
             TaskStatus status,
             TaskPriority priority,
             Pageable pageable
     ) {
-        return taskSearchRepository.search(status, priority, pageable)
+        return taskSearchRepository
+                .search(userId, status, priority, pageable)
                 .stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public TaskResponse getTaskById(String id) {
-        return toResponse(findTaskById(id));
+    public TaskResponse getTaskById(
+            String userId,
+            String id
+    ) {
+        return toResponse(findTaskById(userId, id));
     }
 
-    public TaskResponse updateTask(String id, TaskRequest request) {
-        Task task = findTaskById(id);
+    public TaskResponse updateTask(
+            String userId,
+            String id,
+            TaskRequest request
+    ) {
+        Task task = findTaskById(userId, id);
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -58,12 +71,13 @@ public class TaskService {
         return toResponse(taskRepository.save(task));
     }
 
-    public void deleteTask(String id) {
-        taskRepository.delete(findTaskById(id));
+    public void deleteTask(String userId, String id) {
+        taskRepository.delete(findTaskById(userId, id));
     }
 
-    private Task findTaskById(String id) {
-        return taskRepository.findById(id)
+    private Task findTaskById(String userId, String id) {
+        return taskRepository
+                .findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new TaskNotFoundException(id));
     }
 

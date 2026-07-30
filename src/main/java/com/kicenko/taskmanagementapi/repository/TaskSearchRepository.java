@@ -21,17 +21,24 @@ public class TaskSearchRepository {
     private final MongoTemplate mongoTemplate;
 
     public List<Task> search(
+            String userId,
             TaskStatus status,
             TaskPriority priority,
             Pageable pageable
     ) {
-        Query query = new Query();
+        Query query = new Query(
+                Criteria.where("userId").is(userId)
+        );
 
         Stream.of(
                         Optional.ofNullable(status)
-                                .map(value -> Criteria.where("status").is(value)),
+                                .map(value ->
+                                        Criteria.where("status").is(value)
+                                ),
                         Optional.ofNullable(priority)
-                                .map(value -> Criteria.where("priority").is(value))
+                                .map(value ->
+                                        Criteria.where("priority").is(value)
+                                )
                 )
                 .flatMap(Optional::stream)
                 .forEach(query::addCriteria);

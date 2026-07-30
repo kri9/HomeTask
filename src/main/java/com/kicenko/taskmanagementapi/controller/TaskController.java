@@ -11,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -25,9 +27,14 @@ public class TaskController {
 
     @PostMapping
     public ResponseEntity<TaskResponse> createTask(
+            @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody TaskRequest request
     ) {
-        TaskResponse createdTask = taskService.createTask(request);
+        TaskResponse createdTask = taskService.createTask(
+                jwt.getSubject(),
+                request
+        );
+
         URI location = URI.create("/api/tasks/" + createdTask.id());
 
         return ResponseEntity.created(location).body(createdTask);
@@ -35,6 +42,7 @@ public class TaskController {
 
     @GetMapping
     public ResponseEntity<List<TaskResponse>> getTasks(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) TaskPriority priority,
             @PageableDefault(
@@ -45,28 +53,46 @@ public class TaskController {
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                taskService.getTasks(status, priority, pageable)
+                taskService.getTasks(
+                        jwt.getSubject(),
+                        status,
+                        priority,
+                        pageable
+                )
         );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponse> getTaskById(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String id
     ) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
+        return ResponseEntity.ok(
+                taskService.getTaskById(jwt.getSubject(), id)
+        );
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<TaskResponse> updateTask(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable String id,
             @Valid @RequestBody TaskRequest request
     ) {
-        return ResponseEntity.ok(taskService.updateTask(id, request));
+        return ResponseEntity.ok(
+                taskService.updateTask(
+                        jwt.getSubject(),
+                        id,
+                        request
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable String id) {
-        taskService.deleteTask(id);
+    public ResponseEntity<Void> deleteTask(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String id
+    ) {
+        taskService.deleteTask(jwt.getSubject(), id);
 
         return ResponseEntity.noContent().build();
     }

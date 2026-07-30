@@ -14,6 +14,8 @@ function Invoke-CurlRequest {
 
         [object]$Body,
 
+        [hashtable]$Headers = @{},
+
         [Parameter(Mandatory = $true)]
         [int[]]$ExpectedStatus
     )
@@ -30,6 +32,13 @@ function Invoke-CurlRequest {
             "--request", $Method,
             $Url
         )
+
+        foreach ($header in $Headers.GetEnumerator()) {
+            $arguments += @(
+                "--header",
+                "$($header.Key): $($header.Value)"
+            )
+        }
 
         if ($null -ne $Body) {
             $requestFile = [System.IO.Path]::GetTempFileName()
@@ -92,30 +101,82 @@ function Assert-True {
 
 $suffix = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $createdIds = [System.Collections.Generic.List[string]]::new()
+$ownerHeaders = $null
 
 try {
-    Write-Host "Checking that the API is reachable..."
+    Write-Host "Checking authentication..."
+
+    Invoke-CurlRequest `
+        -Method "GET" `
+        -Url "$BaseUrl/api/tasks" `
+        -ExpectedStatus 401 | Out-Null
+
+    $ownerCredentials = @{
+        email    = "phase4-smoke-owner@example.com"
+        password = "smoke-password-123"
+    }
+
+    $otherCredentials = @{
+        email    = "phase4-smoke-other@example.com"
+        password = "smoke-password-123"
+    }
+
+    Invoke-CurlRequest `
+        -Method "POST" `
+        -Url "$BaseUrl/api/auth/register" `
+        -Body $ownerCredentials `
+        -ExpectedStatus @(201, 409) | Out-Null
+
+    Invoke-CurlRequest `
+        -Method "POST" `
+        -Url "$BaseUrl/api/auth/register" `
+        -Body $otherCredentials `
+        -ExpectedStatus @(201, 409) | Out-Null
+
+    $ownerLogin = Invoke-CurlRequest `
+        -Method "POST" `
+        -Url "$BaseUrl/api/auth/login" `
+        -Body $ownerCredentials `
+        -ExpectedStatus 200
+
+    $otherLogin = Invoke-CurlRequest `
+        -Method "POST" `
+        -Url "$BaseUrl/api/auth/login" `
+        -Body $otherCredentials `
+        -ExpectedStatus 200
+
+    $ownerHeaders = @{
+        Authorization = "Bearer $($ownerLogin.Body.accessToken)"
+    }
+
+    $otherHeaders = @{
+        Authorization = "Bearer $($otherLogin.Body.accessToken)"
+    }
+
     Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?page=0&size=1" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200 | Out-Null
+
+    Write-Host "Authentication: OK"
 
     $requests = @(
         @{
             title       = "Smoke TODO $suffix"
-            description = "Phase 1-3 smoke test"
+            description = "Phase 1-4 smoke test"
             status      = "TODO"
             priority    = "HIGH"
         },
         @{
             title       = "Smoke progress $suffix"
-            description = "Phase 1-3 smoke test"
+            description = "Phase 1-4 smoke test"
             status      = "IN_PROGRESS"
             priority    = "LOW"
         },
         @{
             title       = "Smoke done $suffix"
-            description = "Phase 1-3 smoke test"
+            description = "Phase 1-4 smoke test"
             status      = "DONE"
             priority    = "MEDIUM"
         }
@@ -126,6 +187,7 @@ try {
             -Method "POST" `
             -Url "$BaseUrl/api/tasks" `
             -Body $request `
+            -Headers $ownerHeaders `
             -ExpectedStatus 201
 
         $createdIds.Add([string]$response.Body.id)
@@ -139,15 +201,39 @@ try {
     $single = Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks/$taskId" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     Assert-True `
         -Condition ($single.Body.title -eq "Smoke TODO $suffix") `
         -Message "GET by id returned the wrong task"
 
+    Invoke-CurlRequest `
+        -Method "GET" `
+        -Url "$BaseUrl/api/tasks/$taskId" `
+        -Headers $otherHeaders `
+        -ExpectedStatus 404 | Out-Null
+
+    $otherTasks = Invoke-CurlRequest `
+        -Method "GET" `
+        -Url "$BaseUrl/api/tasks?page=0&size=100" `
+        -Headers $otherHeaders `
+        -ExpectedStatus 200
+
+    $leakedTasks = @($otherTasks.Body | Where-Object {
+            $createdIds.Contains([string]$_.id)
+        })
+
+    Assert-True `
+        -Condition ($leakedTasks.Count -eq 0) `
+        -Message "Another user can see the owner's tasks"
+
+    Write-Host "User isolation: OK"
+
     $page = Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?page=0&size=2&sort=createdAt,desc" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     $pageItems = @($page.Body)
@@ -167,6 +253,7 @@ try {
     $statusFilter = Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?status=TODO&page=0&size=100" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     Assert-True `
@@ -178,6 +265,7 @@ try {
     $priorityFilter = Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?priority=HIGH&page=0&size=100" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     Assert-True `
@@ -189,6 +277,7 @@ try {
     $combinedFilter = Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?status=TODO&priority=HIGH&page=0&size=100" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     Assert-True `
@@ -211,6 +300,7 @@ try {
             status      = "DONE"
             priority    = "MEDIUM"
         } `
+        -Headers $ownerHeaders `
         -ExpectedStatus 200
 
     Assert-True `
@@ -229,11 +319,13 @@ try {
             status      = "TODO"
             priority    = "HIGH"
         } `
+        -Headers $ownerHeaders `
         -ExpectedStatus 400 | Out-Null
 
     Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks?priority=CRITICAL" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 400 | Out-Null
 
     Write-Host "Validation and error handling: OK"
@@ -241,24 +333,29 @@ try {
     Invoke-CurlRequest `
         -Method "DELETE" `
         -Url "$BaseUrl/api/tasks/$taskId" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 204 | Out-Null
 
     Invoke-CurlRequest `
         -Method "GET" `
         -Url "$BaseUrl/api/tasks/$taskId" `
+        -Headers $ownerHeaders `
         -ExpectedStatus 404 | Out-Null
 
     Write-Host "Delete and not-found handling: OK"
-    Write-Host "All Phase 1-3 smoke checks passed." -ForegroundColor Green
+    Write-Host "All Phase 1-4 smoke checks passed." -ForegroundColor Green
 } finally {
-    foreach ($id in $createdIds) {
-        try {
-            Invoke-CurlRequest `
-                -Method "DELETE" `
-                -Url "$BaseUrl/api/tasks/$id" `
-                -ExpectedStatus @(204, 404) | Out-Null
-        } catch {
-            Write-Warning "Could not clean up smoke task $id"
+    if ($null -ne $ownerHeaders) {
+        foreach ($id in $createdIds) {
+            try {
+                Invoke-CurlRequest `
+                    -Method "DELETE" `
+                    -Url "$BaseUrl/api/tasks/$id" `
+                    -Headers $ownerHeaders `
+                    -ExpectedStatus @(204, 404) | Out-Null
+            } catch {
+                Write-Warning "Could not clean up smoke task $id"
+            }
         }
     }
 }
